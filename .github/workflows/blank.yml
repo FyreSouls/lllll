@@ -1,0 +1,32 @@
+import requests
+from bs4 import BeautifulSoup
+import discord
+
+
+# Function to send notification to Discord
+async def send_discord_notification(product_name, price, url, webhook_url):
+    webhook = discord.Webhook.from_url(webhook_url, adapter=discord.AsyncWebhookAdapter())
+    message = f"Price Alert: {product_name} is now available for ${price}. Check it out [here]({url})"
+    await webhook.send(message, username="Price Tracker")
+
+# Function to monitor product price
+def monitor_price(url, desired_price, webhook_url):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"}
+
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    product_name = soup.find('h1', class_='product-title').text.strip()
+    price = float(soup.find('span', class_='price').text.replace('$', '').replace(',', ''))
+
+    if price < desired_price:
+        discord_notification = send_discord_notification(product_name, price, url, webhook_url)
+        print(f'The product {product_name} is under 200$ (notifications marked at <150$), the link is ' + product_url)
+
+# Example usage
+product_url = 'https://www.amazon.com/Portable-Touchscreen-1920x1200P-External-Computer/dp/B0CLB2KBDH/ref=sr_1_1_sspa?dib=eyJ2IjoiMSJ9.ufvO6YhK5RVFqOp3yrHERKqsCJcuFm9MDWJWWGctGnW_t2MN5Es3WbikcfCTk3iiIHnpgnXDxe8dHkNXQOO-39rTeIHPg3M2375I1cjn8K7xqIY4hoZ6l7-yoSnfn2xy3aOdfT-EVYnpUKqmUIlHPo-JHP2Rl7Omyk62VCovmSRdSbCg7wjqgIrghcgAiEVQMMs56bGrc8fm7V-hO7VZvISv78UkbIwGhdc0kjwQHHw.O1rdslWJ3J2K190JLy2x30i4bO8lXx3vzbFgnSJo6P0&dib_tag=se&keywords=xbox&qid=1708839620&sr=8-1-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&psc=1'
+desired_price = 100.00
+discord_webhook_url = 'https://discord.com/api/webhooks/1211185439214407740/B1sbg4TbhAtpuimmZC7pmtILvUuYMiOhNinYtwCXk8EvtIobC5KmIkJzcmcNeSwb0aaq'  # Replace with your Discord webhook URL
+
+monitor_price(product_url, desired_price, discord_webhook_url)
